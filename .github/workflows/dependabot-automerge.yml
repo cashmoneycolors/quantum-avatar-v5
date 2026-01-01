@@ -27,14 +27,8 @@ jobs:
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve --repo ${{ github.repository }}
 
-      - name: Wait for required checks
+      - name: Enable auto-merge (squash)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr checks ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --watch --required
-
-      - name: Merge (squash)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --squash --delete-branch
+          gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --auto --squash --delete-branch
