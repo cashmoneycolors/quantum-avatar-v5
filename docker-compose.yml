@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  quantum-avatar:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+    volumes:
+      - ./quantum_avatar:/app/quantum_avatar

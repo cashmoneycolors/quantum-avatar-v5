@@ -4,6 +4,7 @@ from quantum_avatar.vision.image_generator import ImageGenerator
 from quantum_avatar.vision.art_categorizer import ArtCategorizer
 from quantum_avatar.quantum.quantum_calculator import QuantumCalculator
 from quantum_avatar.business.business_logic import BusinessLogic
+from quantum_avatar.business.margin_optimizer import MarginOptimizer
 from quantum_avatar.autonomy.autonomous_executor import AutonomousExecutor
 from quantum_avatar.security.security_module import SecurityModule
 
@@ -17,11 +18,9 @@ class TestAllModules(unittest.TestCase):
         self.assertIn("tokens", result)
 
     def test_vision(self):
-        # Mock image
-        img = "mock_image"
         gen = ImageGenerator()
-        # Note: actual generation requires model, so skip or mock
-        self.assertTrue(True)  # Placeholder
+        image = gen.generate_image("test")
+        self.assertIsNone(image)
 
     def test_art(self):
         art = ArtCategorizer()
@@ -31,7 +30,9 @@ class TestAllModules(unittest.TestCase):
 
     def test_quantum(self):
         qc = QuantumCalculator()
-        products = [{"name": "Apple", "spoil_rate": 0.1, "freshness_index": 0.9}]
+        products = [
+            {"name": "Apple", "spoil_rate": 0.1, "freshness_index": 0.9}
+        ]
         result = qc.optimize_produce_display(products, 20)
         self.assertIsInstance(result, list)
 
@@ -39,6 +40,18 @@ class TestAllModules(unittest.TestCase):
         bl = BusinessLogic()
         result = bl.earn_points("user1", 10)
         self.assertEqual(result["points"], 10)
+
+    def test_margin_optimizer(self):
+        opt = MarginOptimizer(target_margin=0.30, vat_rate=0.026)
+        price = opt.calculate_sales_price(10.0, 5.0)
+        self.assertIsInstance(price, float)
+        self.assertGreater(price, 10.0)
+
+        discounted = opt.dynamic_pricing(20.0, "18:00", expiry_time="17:00")
+        self.assertEqual(discounted, 10.0)
+
+        full = opt.dynamic_pricing(20.0, "16:59", expiry_time="17:00")
+        self.assertEqual(full, 20.0)
 
     def test_autonomy(self):
         ae = AutonomousExecutor()

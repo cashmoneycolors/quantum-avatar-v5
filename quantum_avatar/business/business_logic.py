@@ -1,6 +1,12 @@
 class BusinessLogic:
     def __init__(self):
         self.users = {}  # user_id: {'points': int, 'level': str}
+        try:
+            from .margin_optimizer import MarginOptimizer
+
+            self.margin_optimizer = MarginOptimizer()
+        except Exception:
+            self.margin_optimizer = None
 
     def earn_points(self, user_id, amount):
         if user_id not in self.users:
@@ -35,3 +41,20 @@ class BusinessLogic:
 
     def get_user_status(self, user_id):
         return self.users.get(user_id, {"points": 0, "level": "Bronze"})
+
+    def suggest_sales_price(
+        self,
+        purchase_price: float,
+        spoilage_rate_percent: float,
+        *,
+        target_margin: float | None = None,
+        vat_rate: float | None = None,
+    ):
+        if self.margin_optimizer is None:
+            return None
+        return self.margin_optimizer.calculate_sales_price(
+            purchase_price,
+            spoilage_rate_percent,
+            target_margin=target_margin,
+            vat_rate=vat_rate,
+        )
