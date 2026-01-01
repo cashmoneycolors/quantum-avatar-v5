@@ -34,4 +34,4 @@ jobs:
           TRANSFORMERS_OFFLINE: '1'
         run: |
           python -m compileall -q quantum_avatar
-          python -m unittest discover -s quantum_avatar/tests -p "test_*.py"
+          python -m unittest discover -s quantum_avatar/tests -p "test_*.py" -t .
