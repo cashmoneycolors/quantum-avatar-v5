@@ -4,17 +4,17 @@ from typing import Any
 
 try:
     import spacy  # type: ignore
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover
     spacy = None
 
 try:
     from transformers import pipeline  # type: ignore
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover
     pipeline = None
 
 try:
     from autocorrect import Speller  # type: ignore
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover
     Speller = None
 
 
