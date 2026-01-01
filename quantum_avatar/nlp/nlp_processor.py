@@ -42,6 +42,10 @@ class NLPProcessor:
                 self.speller = None
 
     def process_text(self, text):
+        if text is None:
+            text = ""
+        if not isinstance(text, str):
+            text = str(text)
         # Autocorrect
         corrected = self.speller(text) if self.speller is not None else text
 
@@ -50,7 +54,7 @@ class NLPProcessor:
             return {
                 "corrected_text": corrected,
                 "entities": [],
-                "tokens": corrected.split(),
+                "tokens": str(corrected).split(),
             }
 
         doc = self.nlp(corrected)

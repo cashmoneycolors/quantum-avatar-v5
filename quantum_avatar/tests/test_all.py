@@ -39,6 +39,10 @@ class TestAllModules(unittest.TestCase):
         result = bl.earn_points("user1", 10)
         self.assertEqual(result["points"], 10)
 
+        invalid = bl.virtual_earnings("user1", "unknown_action")
+        self.assertIsInstance(invalid, dict)
+        self.assertIn("error", invalid)
+
     def test_margin_optimizer(self):
         opt = MarginOptimizer(target_margin=0.30, vat_rate=0.026)
         price = opt.calculate_sales_price(10.0, 5.0)
@@ -56,6 +60,13 @@ class TestAllModules(unittest.TestCase):
         state = {"day": "Saturday", "weather": "sunny"}
         result = ae.autonomous_decision(state)
         self.assertIsInstance(result, str)
+
+        ae2 = AutonomousExecutor()
+        ae2.add_trigger({"day": "Saturday", "weather": "sunny"}, "send_whatsapp")
+        self.assertEqual(
+            ae2.execute({"day": "Saturday", "weather": "sunny"}),
+            "WhatsApp-Einladung gesendet",
+        )
 
     def test_security(self):
         sm = SecurityModule()

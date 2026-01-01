@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 try:
     from transformers import CLIPProcessor, CLIPModel  # type: ignore
 except Exception:  # pragma: no cover
@@ -28,6 +30,16 @@ class ArtCategorizer:
         if CLIPModel is None or CLIPProcessor is None or torch is None:
             return False
 
+        # Safety default: never download models unless explicitly enabled.
+        enabled = os.getenv("QA_ENABLE_ART_CATEGORIZER")
+        if enabled not in {"1", "true", "TRUE", "yes", "YES"}:
+            return False
+
+        if os.getenv("HF_HUB_OFFLINE") in {"1", "true", "TRUE"}:
+            return False
+        if os.getenv("TRANSFORMERS_OFFLINE") in {"1", "true", "TRUE"}:
+            return False
+
         try:
             self.model = CLIPModel.from_pretrained(self.model_id)
             self.processor = CLIPProcessor.from_pretrained(self.model_id)
@@ -41,8 +53,10 @@ class ArtCategorizer:
     def categorize_art(
         self,
         image,
-        categories=["abstract", "realistic", "impressionist", "modern", "classical"],
+        categories=None,
     ):
+        if categories is None:
+            categories = ["abstract", "realistic", "impressionist", "modern", "classical"]
         # Unit-Tests und lokale Runs sollen nicht automatisch HF-Modelle downloaden.
         # Wenn kein echtes Bildobjekt übergeben wird (z.B. "mock"), liefere einen stabilen Fallback.
         if isinstance(image, str):
