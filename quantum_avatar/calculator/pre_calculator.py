@@ -7,6 +7,4 @@ def calculate_break_even(marge, lohnkosten, mietkosten, fixe_kosten=9900):
 
 
 if __name__ == "__main__":
-    print(
-        f"Break-Even bei 35% Marge: CHF {calculate_break_even(0.35, 2000, 1000)}"
-    )
+    print(f"Break-Even bei 35% Marge: CHF {calculate_break_even(0.35, 2000, 1000)}")

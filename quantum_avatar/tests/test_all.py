@@ -30,9 +30,7 @@ class TestAllModules(unittest.TestCase):
 
     def test_quantum(self):
         qc = QuantumCalculator()
-        products = [
-            {"name": "Apple", "spoil_rate": 0.1, "freshness_index": 0.9}
-        ]
+        products = [{"name": "Apple", "spoil_rate": 0.1, "freshness_index": 0.9}]
         result = qc.optimize_produce_display(products, 20)
         self.assertIsInstance(result, list)
 

@@ -16,9 +16,7 @@ class MonitoringModule:
     def monitor_performance(self, function_name, start_time):
         end_time = time.time()
         duration = end_time - start_time
-        logging.info(
-            f"Performance: {function_name} took {duration:.2f} seconds"
-        )
+        logging.info(f"Performance: {function_name} took {duration:.2f} seconds")
 
     def alert_on_error(self, error_message):
         logging.error(f"Error: {error_message}")

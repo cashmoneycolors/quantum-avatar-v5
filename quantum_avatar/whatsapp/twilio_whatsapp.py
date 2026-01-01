@@ -61,7 +61,11 @@ class TwilioWhatsAppClient:
         message = self._client.messages.create(
             from_=self._config.from_number,
             body=body,
-            to=f"whatsapp:{to_number}" if not to_number.startswith("whatsapp:") else to_number,
+            to=(
+                f"whatsapp:{to_number}"
+                if not to_number.startswith("whatsapp:")
+                else to_number
+            ),
         )
         return str(getattr(message, "sid", ""))
 

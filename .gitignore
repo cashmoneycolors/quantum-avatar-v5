@@ -16,5 +16,8 @@ __pycache__/
 lock_files.py
 project_locked.zip
 
+# Local scratch scripts
+scripts/
+
 # Local upstream checkout (kept separate)
 spacy-transformers/
