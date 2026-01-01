@@ -3,6 +3,7 @@
 Amriswil Core - Totale Integration aller Module
 """
 
+from quantum_avatar.apis.payment_provider import PaymentProvider
 from quantum_avatar.inventory.barcode_scanner import BarcodeScanner
 from quantum_avatar.monitoring.monitoring_module import MonitoringModule
 from quantum_avatar.whatsapp.whatsapp_bot import WhatsAppBot
@@ -11,8 +12,6 @@ from quantum_avatar.whatsapp.whatsapp_bot import WhatsAppBot
 def main():
     payment = None
     try:
-        from quantum_avatar.apis.payment_provider import PaymentProvider
-
         payment = PaymentProvider()
     except Exception as exc:
         print(f"Payment deaktiviert: {exc}")
