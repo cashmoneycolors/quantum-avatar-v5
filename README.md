@@ -16,6 +16,16 @@
 - Offline (keine Model-Downloads):
 	- PowerShell: `$env:HF_HUB_OFFLINE=1; $env:TRANSFORMERS_OFFLINE=1; python -m unittest discover -s quantum_avatar/tests -p "test_*.py"`
 
+## Konfiguration (ENV)
+
+- Stripe: `STRIPE_API_KEY`
+- Twilio WhatsApp: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`
+- Vorlage: `.env.example`
+
+## CI
+
+- GitHub Actions nutzt `requirements-ci.txt` (minimal), damit Tests auf Python 3.13 ohne optionalen ML/Quantum-Stack laufen.
+
 ## Cloud-Deployment
 
 - Docker verwenden: `docker build -t amriswil .`

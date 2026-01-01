@@ -1,0 +1,3 @@
+# Minimal dependencies for CI/unit tests.
+# The full pinned ML/quantum stack in requirements.txt can be optional for tests.
+flask==3.0.0
