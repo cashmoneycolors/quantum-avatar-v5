@@ -1,15 +1,38 @@
-import requests
-import stripe
+from __future__ import annotations
+
+import os
+from typing import Any
+
+try:
+    import requests  # type: ignore
+except Exception:  # pragma: no cover
+    requests = None
+
+try:
+    import stripe  # type: ignore
+except Exception:  # pragma: no cover
+    stripe = None
 
 
 class APIIntegrator:
     def __init__(self):
-        stripe.api_key = "sk_test_..."  # Placeholder for Stripe key
-        self.weather_api_key = "your_weather_api_key"  # Placeholder
+        self.weather_api_key = os.getenv("OPENWEATHER_API_KEY", "").strip()
+
+        if stripe is not None:
+            api_key = os.getenv("STRIPE_API_KEY", "").strip()
+            if api_key:
+                stripe.api_key = api_key
 
     def process_payment(self, amount_chf, customer_email):
         # Amount in Rappen (100 Rappen = 1 CHF)
         amount_rappen = int(amount_chf * 100)
+
+        if stripe is None:
+            return "Payment unavailable: stripe not installed"
+
+        if not getattr(stripe, "api_key", None):
+            return "Payment unavailable: STRIPE_API_KEY missing"
+
         try:
             charge = stripe.Charge.create(
                 amount=amount_rappen,
@@ -23,8 +46,17 @@ class APIIntegrator:
 
     def get_weather_amriswil(self):
         # Amriswil coordinates: 47.548, 9.303
-        url = f"https://api.openweathermap.org/data/2.5/weather?lat=47.548&lon=9.303&appid={self.weather_api_key}&units=metric"
-        response = requests.get(url)
+        if requests is None:
+            return {"error": "Weather unavailable: requests not installed"}
+
+        if not self.weather_api_key:
+            return {"error": "Weather unavailable: OPENWEATHER_API_KEY missing"}
+
+        url = (
+            "https://api.openweathermap.org/data/2.5/weather"
+            f"?lat=47.548&lon=9.303&appid={self.weather_api_key}&units=metric"
+        )
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             data = response.json()
             return {
