@@ -1,8 +1,25 @@
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+# Allow running this file directly from any working directory.
+# When executed as a module (python -m quantum_avatar.ui.app), __package__ is
+# set
+# and this block is skipped.
+if not __package__:
+    repo_root = Path(__file__).resolve().parents[2]
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
+
 from flask import Flask, request, jsonify
+
+from quantum_avatar.autonomy.autonomous_executor import AutonomousExecutor
+from quantum_avatar.business.business_logic import BusinessLogic
 from quantum_avatar.nlp.chat import ChatBot
 from quantum_avatar.vision.image_generator import ImageGenerator
-from quantum_avatar.business.business_logic import BusinessLogic
-from quantum_avatar.autonomy.autonomous_executor import AutonomousExecutor
 
 app = Flask(__name__)
 
@@ -52,4 +69,5 @@ def autonomous_action():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug_enabled = os.getenv("QA_FLASK_DEBUG") in {"1", "true", "TRUE", "yes", "YES"}
+    app.run(debug=debug_enabled)
