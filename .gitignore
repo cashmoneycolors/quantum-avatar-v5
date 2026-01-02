@@ -16,6 +16,10 @@ __pycache__/
 lock_files.py
 project_locked.zip
 
+# Local inventory scan reports
+non-git-scan_*.md
+non-git-scan_roots_*.md
+
 # Local scratch scripts
 scripts/
 
