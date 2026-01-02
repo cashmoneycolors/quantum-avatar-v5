@@ -1,9 +1,7 @@
 def calculate_break_even(marge, lohnkosten, mietkosten, fixe_kosten=9900):
     # Break-Even: Fixkosten / Marge
     # fixe_kosten ist Baseline; Lohn/Miete kommt typischerweise oben drauf.
-    total_fixkosten = (
-        float(fixe_kosten) + float(lohnkosten) + float(mietkosten)
-    )
+    total_fixkosten = float(fixe_kosten) + float(lohnkosten) + float(mietkosten)
     break_even = total_fixkosten / float(marge)
     return round(break_even, 2)
 

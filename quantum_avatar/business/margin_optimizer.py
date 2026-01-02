@@ -50,9 +50,7 @@ class MarginOptimizer:
 
         cost = purchase_price * (1.0 + (spoilage_rate_percent / 100.0))
         sales_price_excl_vat = cost / (1.0 - effective_target_margin)
-        sales_price_incl_vat = sales_price_excl_vat * (
-            1.0 + effective_vat_rate
-        )
+        sales_price_incl_vat = sales_price_excl_vat * (1.0 + effective_vat_rate)
         return round(sales_price_incl_vat, 2)
 
     def dynamic_pricing(

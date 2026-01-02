@@ -38,11 +38,7 @@ class QuantumCalculator:
 
     def calculate_quantum_probability(self, states=None):
         # Simple quantum state simulation (fallback if qiskit isn't available).
-        missing = (
-            self.simulator is None
-            or QuantumCircuit is None
-            or transpile is None
-        )
+        missing = self.simulator is None or QuantumCircuit is None or transpile is None
         if missing:
             return {"00": 512, "11": 512}
 

@@ -21,11 +21,7 @@ class ArtCategorizer:
         self.processor = None
         self.device = "cpu"
 
-        if (
-            torch is not None
-            and hasattr(torch, "cuda")
-            and torch.cuda.is_available()
-        ):
+        if torch is not None and hasattr(torch, "cuda") and torch.cuda.is_available():
             self.device = "cuda"
 
     def _ensure_loaded(self) -> bool:

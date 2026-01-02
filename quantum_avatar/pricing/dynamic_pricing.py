@@ -8,9 +8,6 @@ class DynamicPricing:
 
     def adjust_price(self, product, our_price):
         competitor_prices = self.scrape_competitor_prices()
-        if (
-            product in competitor_prices
-            and competitor_prices[product] < our_price
-        ):
+        if product in competitor_prices and competitor_prices[product] < our_price:
             return competitor_prices[product] - 0.10  # Bestpreis-Garantie
         return our_price
