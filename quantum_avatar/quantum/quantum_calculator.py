@@ -33,12 +33,22 @@ class QuantumCalculator:
             temp_factor = 1.0 + (float(weather_temp) / 10.0)
             return freshness_index - (spoil_rate * temp_factor)
 
-        return sorted(list(products), key=score, reverse=True)[: int(max_slots)]
+        ranked = sorted(list(products), key=score, reverse=True)
+        return ranked[: int(max_slots)]
 
     def calculate_quantum_probability(self, states=None):
-        # Simple quantum state simulation (falls back if qiskit isn't available).
-        if self.simulator is None or QuantumCircuit is None or transpile is None:
+        # Simple quantum state simulation (fallback if qiskit isn't available).
+        missing = (
+            self.simulator is None
+            or QuantumCircuit is None
+            or transpile is None
+        )
+        if missing:
             return {"00": 512, "11": 512}
+
+        assert self.simulator is not None
+        assert QuantumCircuit is not None
+        assert transpile is not None
 
         qc = QuantumCircuit(2)
         qc.h(0)

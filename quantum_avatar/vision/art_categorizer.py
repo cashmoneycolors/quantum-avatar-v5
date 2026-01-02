@@ -21,7 +21,11 @@ class ArtCategorizer:
         self.processor = None
         self.device = "cpu"
 
-        if torch is not None and hasattr(torch, "cuda") and torch.cuda.is_available():
+        if (
+            torch is not None
+            and hasattr(torch, "cuda")
+            and torch.cuda.is_available()
+        ):
             self.device = "cuda"
 
     def _ensure_loaded(self) -> bool:
@@ -56,17 +60,33 @@ class ArtCategorizer:
         categories=None,
     ):
         if categories is None:
-            categories = ["abstract", "realistic", "impressionist", "modern", "classical"]
-        # Unit-Tests und lokale Runs sollen nicht automatisch HF-Modelle downloaden.
-        # Wenn kein echtes Bildobjekt übergeben wird (z.B. "mock"), liefere einen stabilen Fallback.
+            categories = [
+                "abstract",
+                "realistic",
+                "impressionist",
+                "modern",
+                "classical",
+            ]
+        if not categories:
+            return "unknown"
+        # Unit-Tests und lokale Runs sollen nicht automatisch
+        # HF-Modelle downloaden.
+        # Wenn kein echtes Bildobjekt übergeben wird (z.B. "mock"), Fallback.
         if isinstance(image, str):
             return categories[0]
 
         if not self._ensure_loaded():
             return categories[0]
 
+        # Defensive guard: mypy/pylance + runtime safety.
+        if self.processor is None or self.model is None:
+            return categories[0]
+
         inputs = self.processor(
-            text=categories, images=image, return_tensors="pt", padding=True
+            text=categories,
+            images=image,
+            return_tensors="pt",
+            padding=True,
         )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         outputs = self.model(**inputs)
@@ -77,6 +97,10 @@ class ArtCategorizer:
     def understand_art(
         self, image, description_prompt="Describe this artwork in detail"
     ):
-        # For understanding, perhaps use a captioning model, but for simplicity, use CLIP with text
+        # For understanding, maybe use captioning; for now use CLIP with text.
         # This is a placeholder; in reality, use a captioning model like BLIP
-        return f"Artwork categorized as {self.categorize_art(image)}. {description_prompt} - AI analysis shows artistic elements."
+        category = self.categorize_art(image)
+        return (
+            f"Artwork categorized as {category}. {description_prompt} "
+            "- AI analysis shows artistic elements."
+        )

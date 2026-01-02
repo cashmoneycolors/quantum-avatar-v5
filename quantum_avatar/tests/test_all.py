@@ -30,7 +30,9 @@ class TestAllModules(unittest.TestCase):
 
     def test_quantum(self):
         qc = QuantumCalculator()
-        products = [{"name": "Apple", "spoil_rate": 0.1, "freshness_index": 0.9}]
+        products = [
+            {"name": "Apple", "spoil_rate": 0.1, "freshness_index": 0.9},
+        ]
         result = qc.optimize_produce_display(products, 20)
         self.assertIsInstance(result, list)
 
@@ -62,7 +64,10 @@ class TestAllModules(unittest.TestCase):
         self.assertIsInstance(result, str)
 
         ae2 = AutonomousExecutor()
-        ae2.add_trigger({"day": "Saturday", "weather": "sunny"}, "send_whatsapp")
+        ae2.add_trigger(
+            {"day": "Saturday", "weather": "sunny"},
+            "send_whatsapp",
+        )
         self.assertEqual(
             ae2.execute({"day": "Saturday", "weather": "sunny"}),
             "WhatsApp-Einladung gesendet",

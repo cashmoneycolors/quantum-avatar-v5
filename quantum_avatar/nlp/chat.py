@@ -21,7 +21,9 @@ class ChatBot:
         if not text:
             response = "Bitte gib eine Nachricht ein."
             self.conversation_history.append((text, response))
-            self.conversation_history = self.conversation_history[-self.max_history :]
+            self.conversation_history = self.conversation_history[
+                -self.max_history:
+            ]
             return response
 
         processed = self.nlp.process_text(text)
@@ -32,5 +34,7 @@ class ChatBot:
             response = "Ich verstehe. Erzähl mehr."
 
         self.conversation_history.append((text, response))
-        self.conversation_history = self.conversation_history[-self.max_history :]
+        self.conversation_history = self.conversation_history[
+            -self.max_history:
+        ]
         return response

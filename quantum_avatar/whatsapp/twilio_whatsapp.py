@@ -43,8 +43,8 @@ class TwilioWhatsAppClient:
     def __init__(self, config: TwilioWhatsAppConfig | None = None):
         if Client is None:
             raise RuntimeError(
-                "twilio ist nicht installiert. Installiere es (pip install twilio) "
-                "oder nutze WhatsAppBot als Mock."
+                "twilio ist nicht installiert. Installiere es "
+                "(pip install twilio) oder nutze WhatsAppBot als Mock."
             )
 
         if config is None:
@@ -70,7 +70,10 @@ class TwilioWhatsAppClient:
         return str(getattr(message, "sid", ""))
 
 
-def send_whatsapp_order_confirmation(customer_number: str, order_details: str) -> str:
+def send_whatsapp_order_confirmation(
+    customer_number: str,
+    order_details: str,
+) -> str:
     client = TwilioWhatsAppClient()
     body = (
         "Bestätigung Amriswil Markt: Ihre Bestellung "

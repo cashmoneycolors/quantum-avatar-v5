@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 try:
     import requests  # type: ignore
@@ -50,7 +49,9 @@ class APIIntegrator:
             return {"error": "Weather unavailable: requests not installed"}
 
         if not self.weather_api_key:
-            return {"error": "Weather unavailable: OPENWEATHER_API_KEY missing"}
+            return {
+                "error": "Weather unavailable: OPENWEATHER_API_KEY missing",
+            }
 
         url = (
             "https://api.openweathermap.org/data/2.5/weather"

@@ -12,7 +12,8 @@ except Exception:  # pragma: no cover
 def _get_stripe_client(api_key: str | None = None) -> Any:
     if stripe is None:
         raise RuntimeError(
-            "stripe ist nicht installiert. Installiere es oder mache Payment optional."
+            "stripe ist nicht installiert. Installiere es oder mache Payment "
+            "optional."
         )
 
     stripe_any: Any = cast(Any, stripe)
@@ -34,7 +35,8 @@ def create_payment_intent(
 ) -> str:
     """Create a Stripe PaymentIntent and return the client_secret.
 
-    Keeps Stripe optional: raises clear errors if stripe or STRIPE_API_KEY is missing.
+    Keeps Stripe optional: raises clear errors if stripe or STRIPE_API_KEY is
+    missing.
     """
     stripe_client = _get_stripe_client(api_key=api_key)
 

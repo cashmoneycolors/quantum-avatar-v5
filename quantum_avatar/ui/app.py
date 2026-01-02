@@ -69,5 +69,11 @@ def autonomous_action():
 
 
 if __name__ == "__main__":
-    debug_enabled = os.getenv("QA_FLASK_DEBUG") in {"1", "true", "TRUE", "yes", "YES"}
+    debug_enabled = os.getenv("QA_FLASK_DEBUG") in {
+        "1",
+        "true",
+        "TRUE",
+        "yes",
+        "YES",
+    }
     app.run(debug=debug_enabled)

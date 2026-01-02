@@ -17,11 +17,15 @@ class TestOptionalIntegrations(unittest.TestCase):
             twilio_whatsapp.TwilioWhatsAppClient()
 
     def test_twilio_config_requires_env(self):
-        # This validates clear env-var error behavior without needing twilio installed.
+        # Validates clear env-var error behavior
+        # without needing twilio installed.
         old = {
             "TWILIO_ACCOUNT_SID": os.environ.pop("TWILIO_ACCOUNT_SID", None),
             "TWILIO_AUTH_TOKEN": os.environ.pop("TWILIO_AUTH_TOKEN", None),
-            "TWILIO_WHATSAPP_FROM": os.environ.pop("TWILIO_WHATSAPP_FROM", None),
+            "TWILIO_WHATSAPP_FROM": os.environ.pop(
+                "TWILIO_WHATSAPP_FROM",
+                None,
+            ),
         }
         try:
             with self.assertRaises(ValueError):

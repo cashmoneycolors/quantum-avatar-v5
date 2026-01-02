@@ -18,7 +18,10 @@ class SecurityModule:
         for key in data.keys():
             k = str(key).lower()
             if any(keyword in k for keyword in personal_keywords):
-                return "Datenschutz-Check: Persönliche Daten erkannt, Consent erforderlich"
+                return (
+                    "Datenschutz-Check: Persönliche Daten erkannt, "
+                    "Consent erforderlich"
+                )
         return "Datenschutz-Check: OK"
 
     def ethical_check(self, action: Any) -> str:

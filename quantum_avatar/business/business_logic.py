@@ -5,7 +5,8 @@ from typing import Any
 
 class BusinessLogic:
     def __init__(self):
-        self.users: dict[str, dict[str, Any]] = {}  # user_id: {'points': int, 'level': str}
+        # user_id -> {'points': int, 'level': str}
+        self.users: dict[str, dict[str, Any]] = {}
         try:
             from .margin_optimizer import MarginOptimizer
 
@@ -34,7 +35,8 @@ class BusinessLogic:
 
         if uid not in self.users:
             self.users[uid] = {"points": 0, "level": "Bronze"}
-        self.users[uid]["points"] = int(self.users[uid].get("points", 0)) + delta
+        current = int(self.users[uid].get("points", 0))
+        self.users[uid]["points"] = current + delta
         self.update_level(uid)
         return dict(self.users[uid])
 
@@ -42,8 +44,10 @@ class BusinessLogic:
         uid = self._normalize_user_id(user_id)
         delta = self._normalize_amount(amount)
 
-        if uid in self.users and int(self.users[uid].get("points", 0)) >= delta:
-            self.users[uid]["points"] = int(self.users[uid].get("points", 0)) - delta
+        if uid in self.users:
+            current = int(self.users[uid].get("points", 0))
+            if current >= delta:
+                self.users[uid]["points"] = current - delta
             self.update_level(uid)
             return True
         return False
@@ -78,7 +82,10 @@ class BusinessLogic:
         data = self.users.get(uid)
         if not data:
             return {"points": 0, "level": "Bronze"}
-        return {"points": int(data.get("points", 0)), "level": str(data.get("level", "Bronze"))}
+        return {
+            "points": int(data.get("points", 0)),
+            "level": str(data.get("level", "Bronze")),
+        }
 
     def suggest_sales_price(
         self,
