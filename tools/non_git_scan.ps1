@@ -3,6 +3,7 @@ param(
     "C:\workspace",
     "C:\workspaces",
     "C:\cashmoneycolors",
+    "C:\cashmoneycolors_projects",
     "C:\Users\cashm\Documents",
     "D:\"
   ),
