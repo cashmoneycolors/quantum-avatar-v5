@@ -95,6 +95,128 @@ function Get-GitLastCommitIso([string]$repoPath) {
   return ""
 }
 
+function Get-GitOriginUrl([string]$repoPath) {
+  try {
+    $u = (git -C $repoPath remote get-url origin 2>$null)
+    if ($u) { return ([string]$u).Trim() }
+  } catch {}
+
+  # Fallback: parse .git/config (works even if git refuses due to ownership).
+  try {
+    $configPath = Join-Path $repoPath ".git\config"
+    if (Test-Path -LiteralPath $configPath -PathType Leaf) {
+      $inOrigin = $false
+      $lines = Get-Content -LiteralPath $configPath -ErrorAction SilentlyContinue
+      foreach ($line in $lines) {
+        if ($line -match '^\s*\[remote\s+"origin"\]\s*$') { $inOrigin = $true; continue }
+        if ($line -match '^\s*\[') { $inOrigin = $false }
+        if ($inOrigin -and ($line -match '^\s*url\s*=\s*(.+)\s*$')) {
+          $v = ([string]$Matches[1]).Trim()
+          if ($v) { return $v }
+        }
+      }
+    }
+  } catch {}
+  return ""
+}
+
+function Get-GitHeadSha([string]$repoPath) {
+  try {
+    $s = (git -C $repoPath rev-parse HEAD 2>$null)
+    if ($s) { return ([string]$s).Trim() }
+  } catch {}
+
+  # Fallback: resolve .git/HEAD -> ref -> sha (also checks packed-refs).
+  try {
+    $headPath = Join-Path $repoPath ".git\HEAD"
+    if (-not (Test-Path -LiteralPath $headPath -PathType Leaf)) { return "" }
+    $headText = (Get-Content -LiteralPath $headPath -Raw -ErrorAction SilentlyContinue).Trim()
+    if (-not $headText) { return "" }
+
+    if ($headText -match '^ref:\s*(.+)\s*$') {
+      $ref = ([string]$Matches[1]).Trim()
+      $refPath = Join-Path $repoPath (".git\\" + $ref.Replace('/', '\\'))
+      if (Test-Path -LiteralPath $refPath -PathType Leaf) {
+        $sha = (Get-Content -LiteralPath $refPath -Raw -ErrorAction SilentlyContinue).Trim()
+        if ($sha) { return $sha }
+      }
+
+      $packedRefs = Join-Path $repoPath ".git\packed-refs"
+      if (Test-Path -LiteralPath $packedRefs -PathType Leaf) {
+        $plines = Get-Content -LiteralPath $packedRefs -ErrorAction SilentlyContinue
+        foreach ($l in $plines) {
+          if ($l.StartsWith('#') -or $l.StartsWith('^') -or (-not $l.Trim())) { continue }
+          $parts = $l -split '\s+'
+          if ($parts.Length -ge 2 -and $parts[1] -eq $ref) {
+            $sha = ([string]$parts[0]).Trim()
+            if ($sha) { return $sha }
+          }
+        }
+      }
+    } else {
+      # Detached HEAD contains SHA directly.
+      return $headText
+    }
+  } catch {}
+  return ""
+}
+
+function Normalize-GitRemote([string]$remote) {
+  if (-not $remote) { return "" }
+  $r = $remote.Trim().ToLowerInvariant()
+  if ($r.StartsWith("git@github.com:")) {
+    $r = "https://github.com/" + $r.Substring("git@github.com:".Length)
+  }
+  if ($r.EndsWith(".git")) { $r = $r.Substring(0, $r.Length - 4) }
+  return $r
+}
+
+function Get-RepoDedupeKey([object]$row) {
+  $origin = Normalize-GitRemote $row.origin
+  if ($origin) { return "origin:" + $origin }
+  if ($row.head) { return "head:" + ([string]$row.head) }
+
+  # Heuristic: if this repo looks "weak" (no origin/head and no commit info),
+  # but we have a strong repo with the same folder name elsewhere, group by name.
+  $lc = ([string]$row.lastCommit)
+  $isWeak = (-not $lc) -or ($lc -eq "(unknown)")
+  if ($isWeak) {
+    try {
+      $leaf = (Split-Path -Leaf ([string]$row.path)).ToLowerInvariant()
+      if ($leaf -and $script:StrongRepoKeyByName -and $script:StrongRepoKeyByName.ContainsKey($leaf)) {
+        return [string]$script:StrongRepoKeyByName[$leaf]
+      }
+    } catch {}
+  }
+
+  return "path:" + ([string]$row.path)
+}
+
+function Get-RepoPreferenceScore([object]$row) {
+  $p = ([string]$row.path)
+  $pl = $p.ToLowerInvariant()
+
+  $score = 0
+  if ($pl.StartsWith("c:\\cashmoneycolors_projects\\")) { $score += 100 }
+  elseif ($pl.StartsWith("c:\\cashmoneycolors\\")) { $score += 90 }
+  elseif ($pl.StartsWith("c:\\workspaces\\")) { $score += 80 }
+  elseif ($pl.StartsWith("c:\\workspace\\")) { $score += 70 }
+  elseif ($pl.StartsWith("c:\\users\\cashm\\documents\\")) { $score += 60 }
+  elseif ($pl.StartsWith("d:\\")) { $score += 10 }
+
+  if ($pl.Contains("\\.worktrees\\")) { $score -= 40 }
+  if ($pl.Contains("__old")) { $score -= 50 }
+  if ($pl.Contains("\\old\\")) { $score -= 30 }
+  if ($pl.Contains("\\backup\\")) { $score -= 30 }
+  if ($pl.Contains("\\temp\\")) { $score -= 20 }
+
+  # Slight boost if it looks like your canonical GitHub account.
+  $origin = (Normalize-GitRemote $row.origin)
+  if ($origin.Contains("github.com/cashmoneycolors/")) { $score += 15 }
+
+  return $score
+}
+
 $rootsExisting = $Roots | Where-Object { Test-Path -LiteralPath $_ }
 
 $gitRepos = @{}     # repoPath -> @{ path=...; lastCommit=...; kind=... }
@@ -121,6 +243,8 @@ foreach ($root in $rootsExisting) {
             path=$current
             lastCommit=(Get-GitLastCommitIso $current)
             kind=(Get-GitRepoKind $current)
+            origin=(Get-GitOriginUrl $current)
+            head=(Get-GitHeadSha $current)
           }
         }
       }
@@ -164,12 +288,73 @@ $gitRowsAll = @(
       path = $_.Value.path
       lastCommit = $_.Value.lastCommit
       kind = $_.Value.kind
+      origin = $_.Value.origin
+      head = $_.Value.head
     }
   }
 )
 
-$gitRowsMain = @($gitRowsAll | Where-Object { $_.kind -ne "worktree" } | Sort-Object lastCommit -Descending)
+$gitRowsMainAll = @($gitRowsAll | Where-Object { $_.kind -ne "worktree" } | Sort-Object lastCommit -Descending)
 $gitRowsWorktrees = @($gitRowsAll | Where-Object { $_.kind -eq "worktree" } | Sort-Object lastCommit -Descending)
+
+# Dedupe main repos by origin URL (fallback: HEAD SHA). Keep best/most canonical path.
+$script:StrongRepoKeyByName = @{}
+foreach ($r in $gitRowsMainAll) {
+  try {
+    $leaf = (Split-Path -Leaf ([string]$r.path)).ToLowerInvariant()
+    if (-not $leaf) { continue }
+
+    $originNorm = Normalize-GitRemote $r.origin
+    $key = ""
+    if ($originNorm) { $key = "origin:" + $originNorm }
+    elseif ($r.head) { $key = "head:" + ([string]$r.head) }
+    else { continue }
+
+    if (-not $script:StrongRepoKeyByName.ContainsKey($leaf)) {
+      $script:StrongRepoKeyByName[$leaf] = $key
+    }
+  } catch {}
+}
+
+$dedupeGroups = @{}
+foreach ($row in $gitRowsMainAll) {
+  $key = Get-RepoDedupeKey $row
+  if (-not $dedupeGroups.ContainsKey($key)) { $dedupeGroups[$key] = @() }
+  $dedupeGroups[$key] += ,$row
+}
+
+$gitRowsMain = @()
+$gitRowsMainDuplicates = @()
+
+foreach ($kv in $dedupeGroups.GetEnumerator()) {
+  $group = @($kv.Value)
+  if ($group.Count -le 1) {
+    $gitRowsMain += $group[0]
+    continue
+  }
+
+  $best = $group | Sort-Object @(
+    @{ Expression = { Get-RepoPreferenceScore $_ }; Descending = $true },
+    @{ Expression = { $_.lastCommit }; Descending = $true }
+  ) | Select-Object -First 1
+
+  $gitRowsMain += $best
+
+  foreach ($g in $group) {
+    if ($g.path -ne $best.path) {
+      $gitRowsMainDuplicates += [pscustomobject]@{
+        key = $kv.Key
+        path = $g.path
+        lastCommit = $g.lastCommit
+        origin = $g.origin
+        canonical = $best.path
+      }
+    }
+  }
+}
+
+$gitRowsMain = @($gitRowsMain | Sort-Object lastCommit -Descending)
+$gitRowsMainDuplicates = @($gitRowsMainDuplicates | Sort-Object key, lastCommit -Descending)
 
 $nonGitRows = @(
   $nonGitProjects.GetEnumerator() | ForEach-Object {
@@ -196,7 +381,29 @@ $takeGit = [Math]::Min($MaxResults, $gitRowsMain.Count)
 for ($i=0; $i -lt $takeGit; $i++) {
   $row = $gitRowsMain[$i]
   $lc = if ($row.lastCommit) { $row.lastCommit } else { "(unknown)" }
-  $lines.Add("- $($row.path) | lastCommit=$lc")
+  $origin = if ($row.origin) { $row.origin } else { "" }
+  if ($origin) {
+    $lines.Add("- $($row.path) | lastCommit=$lc | origin=$origin")
+  } else {
+    $lines.Add("- $($row.path) | lastCommit=$lc")
+  }
+}
+
+if ($gitRowsMainDuplicates.Count -gt 0) {
+  $lines.Add("")
+  $lines.Add("## Git Repos (Main) - Duplikate")
+  $lines.Add("Total: $($gitRowsMainDuplicates.Count)")
+  $takeDup = [Math]::Min($MaxResults, $gitRowsMainDuplicates.Count)
+  for ($i=0; $i -lt $takeDup; $i++) {
+    $row = $gitRowsMainDuplicates[$i]
+    $lc = if ($row.lastCommit) { $row.lastCommit } else { "(unknown)" }
+    $origin = if ($row.origin) { $row.origin } else { "" }
+    if ($origin) {
+      $lines.Add("- $($row.path) | lastCommit=$lc | origin=$origin | canonical=$($row.canonical)")
+    } else {
+      $lines.Add("- $($row.path) | lastCommit=$lc | canonical=$($row.canonical)")
+    }
+  }
 }
 
 $lines.Add("")
@@ -223,4 +430,4 @@ if (-not (Test-Path -LiteralPath $dirOut)) { New-Item -ItemType Directory -Path 
 $lines | Set-Content -LiteralPath $ReportPath -Encoding UTF8
 
 Write-Host "Wrote report: $ReportPath"
-Write-Host "Git repos: $($gitRowsMain.Count) | Worktrees: $($gitRowsWorktrees.Count) | Non-git projects: $($nonGitRows.Count)"
+Write-Host "Git repos (deduped): $($gitRowsMain.Count) | Main duplicates: $($gitRowsMainDuplicates.Count) | Worktrees: $($gitRowsWorktrees.Count) | Non-git projects: $($nonGitRows.Count)"
