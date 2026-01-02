@@ -13,8 +13,11 @@
 
 ## Tests
 
-- Offline (keine Model-Downloads):
- 	- PowerShell: `$env:HF_HUB_OFFLINE=1; $env:TRANSFORMERS_OFFLINE=1; py -3.13 -m unittest discover -s quantum_avatar/tests -p "test_*.py" -t .`
+- Schnellstart (PowerShell, aus beliebigem Arbeitsverzeichnis): `./tools/run_tests.ps1`
+- Offline (keine Model-Downloads): `./tools/run_tests.ps1 -Offline`
+
+- Manuell (Repo-Root erforderlich): `python -m unittest discover -s quantum_avatar/tests -p "test_*.py" -t .`
+	- PowerShell (Offline): `$env:HF_HUB_OFFLINE=1; $env:TRANSFORMERS_OFFLINE=1; py -3.13 -m unittest discover -s quantum_avatar/tests -p "test_*.py" -t .`
 
 ## Konfiguration (ENV)
 
