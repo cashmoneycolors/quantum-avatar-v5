@@ -32,6 +32,8 @@ $excludeDirNames = @(
   ".pytest_cache", ".mypy_cache", ".ruff_cache",
   ".idea", ".vscode", ".vs",
   "CopilotIndices", "FileContentIndex",
+  "copilot-instructions",
+  "copilot-instructions_cash",
   "dist","build","target","out","bin","obj",
   ".next", ".nuxt",
   "$RECYCLE.BIN",
@@ -65,6 +67,26 @@ function Try-Get-MarkersInDir([string]$dir) {
   return $found
 }
 
+function Is-CopilotInstructionsRepoPath([string]$path) {
+  $p = $path.Replace('/', '\')
+  if ($p.IndexOf("\\.github\\copilot-instructions\\", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
+  if ($p.IndexOf("\\copilot-instructions\\", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
+  if ($p.IndexOf("\\copilot-instructions_cash\\", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
+  return $false
+}
+
+function Get-GitRepoKind([string]$repoPath) {
+  $dotGit = Join-Path $repoPath ".git"
+  if (Test-Path -LiteralPath $dotGit -PathType Leaf) {
+    # worktree: .git is a file that points at the actual gitdir
+    return "worktree"
+  }
+  if (Test-Path -LiteralPath $dotGit -PathType Container) {
+    return "repo"
+  }
+  return "unknown"
+}
+
 function Get-GitLastCommitIso([string]$repoPath) {
   try {
     $t = (git -C $repoPath log -1 --format=%cI 2>$null)
@@ -75,7 +97,7 @@ function Get-GitLastCommitIso([string]$repoPath) {
 
 $rootsExisting = $Roots | Where-Object { Test-Path -LiteralPath $_ }
 
-$gitRepos = @{}     # repoPath -> @{ path=...; lastCommit=... }
+$gitRepos = @{}     # repoPath -> @{ path=...; lastCommit=...; kind=... }
 $nonGitProjects = @{} # projectPath -> @{ path=...; last=...; markers=@{...} }
 
 foreach ($root in $rootsExisting) {
@@ -93,8 +115,14 @@ foreach ($root in $rootsExisting) {
 
     # If this is a git repo, record and do not descend.
     if (Test-Path -LiteralPath (Join-Path $current ".git")) {
-      if (-not $gitRepos.ContainsKey($current)) {
-        $gitRepos[$current] = @{ path=$current; lastCommit=(Get-GitLastCommitIso $current) }
+      if (-not (Is-CopilotInstructionsRepoPath $current)) {
+        if (-not $gitRepos.ContainsKey($current)) {
+          $gitRepos[$current] = @{
+            path=$current
+            lastCommit=(Get-GitLastCommitIso $current)
+            kind=(Get-GitRepoKind $current)
+          }
+        }
       }
       continue
     }
@@ -130,14 +158,18 @@ foreach ($root in $rootsExisting) {
   }
 }
 
-$gitRows = @(
+$gitRowsAll = @(
   $gitRepos.GetEnumerator() | ForEach-Object {
     [pscustomobject]@{
       path = $_.Value.path
       lastCommit = $_.Value.lastCommit
+      kind = $_.Value.kind
     }
-  } | Sort-Object lastCommit -Descending
+  }
 )
+
+$gitRowsMain = @($gitRowsAll | Where-Object { $_.kind -ne "worktree" } | Sort-Object lastCommit -Descending)
+$gitRowsWorktrees = @($gitRowsAll | Where-Object { $_.kind -eq "worktree" } | Sort-Object lastCommit -Descending)
 
 $nonGitRows = @(
   $nonGitProjects.GetEnumerator() | ForEach-Object {
@@ -158,11 +190,21 @@ $lines.Add("## Roots")
 foreach ($r in $rootsExisting) { $lines.Add($r) }
 
 $lines.Add("")
-$lines.Add("## Git Repos")
-$lines.Add("Total: $($gitRows.Count)")
-$takeGit = [Math]::Min($MaxResults, $gitRows.Count)
+$lines.Add("## Git Repos (Main)")
+$lines.Add("Total: $($gitRowsMain.Count)")
+$takeGit = [Math]::Min($MaxResults, $gitRowsMain.Count)
 for ($i=0; $i -lt $takeGit; $i++) {
-  $row = $gitRows[$i]
+  $row = $gitRowsMain[$i]
+  $lc = if ($row.lastCommit) { $row.lastCommit } else { "(unknown)" }
+  $lines.Add("- $($row.path) | lastCommit=$lc")
+}
+
+$lines.Add("")
+$lines.Add("## Git Worktrees")
+$lines.Add("Total: $($gitRowsWorktrees.Count)")
+$takeWt = [Math]::Min($MaxResults, $gitRowsWorktrees.Count)
+for ($i=0; $i -lt $takeWt; $i++) {
+  $row = $gitRowsWorktrees[$i]
   $lc = if ($row.lastCommit) { $row.lastCommit } else { "(unknown)" }
   $lines.Add("- $($row.path) | lastCommit=$lc")
 }
@@ -181,4 +223,4 @@ if (-not (Test-Path -LiteralPath $dirOut)) { New-Item -ItemType Directory -Path 
 $lines | Set-Content -LiteralPath $ReportPath -Encoding UTF8
 
 Write-Host "Wrote report: $ReportPath"
-Write-Host "Git repos: $($gitRows.Count) | Non-git projects: $($nonGitRows.Count)"
+Write-Host "Git repos: $($gitRowsMain.Count) | Worktrees: $($gitRowsWorktrees.Count) | Non-git projects: $($nonGitRows.Count)"
