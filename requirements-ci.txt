@@ -1,4 +1,4 @@
 # Minimal dependencies for CI/unit tests.
 # The full pinned ML/quantum stack in requirements.txt can be optional for tests.
 flask==3.0.0
-requests==2.32.3
+requests==2.32.5
